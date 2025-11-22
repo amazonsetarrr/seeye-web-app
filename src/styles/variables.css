@@ -1,0 +1,97 @@
+:root {
+  /* Brand Colors */
+  --color-primary: #0A2E50;
+  /* Navy */
+  --color-primary-hover: #0F3D66;
+  --color-primary-active: #051B30;
+  --color-primary-subtle: #E6EBF0;
+
+  /* Accent & Feedback Colors */
+  --color-accent-teal: #1ABCC9;
+  --color-accent-aqua: #4CDEC4;
+  --color-error: #D32F2F;
+  /* Standard Red */
+  --color-error-bg: #FDE8E8;
+  --color-warning: #F59E0B;
+  --color-success: #10B981;
+  --color-info: #3B82F6;
+
+  /* Neutral Colors */
+  --color-bg-app: #F5F7FA;
+  /* Light Gray */
+  --color-bg-surface: #EAEFEA;
+  /* Neutral for cards */
+  --color-bg-surface-hover: #F0F4F0;
+
+  --color-text-main: #0A2E50;
+  /* Primary color for main text */
+  --color-text-secondary: #475569;
+  /* Medium Gray */
+  --color-text-tertiary: #94A3B8;
+  /* Light Gray */
+
+  --color-border: #E2E8F0;
+  /* Medium Gray */
+  --color-border-hover: #CBD5E1;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #0A2E50 0%, #1ABCC9 100%);
+  --gradient-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.5) 100%);
+
+  /* Spacing & Layout */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Glassmorphism */
+  --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+  --glass-bg: rgba(234, 239, 234, 0.8);
+  /* Matching neutral surface */
+  --backdrop-blur: blur(12px);
+}
+
+.dark {
+  /* Dark mode overrides */
+  --color-bg-app: #0F172A;
+  /* Slate 900 */
+  --color-bg-surface: #1E293B;
+  /* Slate 800 */
+  --color-bg-surface-hover: #334155;
+  /* Slate 700 */
+
+  --color-text-main: #F1F5F9;
+  /* Slate 100 */
+  --color-text-secondary: #94A3B8;
+  /* Slate 400 */
+  --color-text-tertiary: #64748B;
+  /* Slate 500 */
+
+  --color-border: #334155;
+  /* Slate 700 */
+  --color-border-hover: #475569;
+  /* Slate 600 */
+
+  --color-primary-subtle: #1e293b;
+  /* Darker subtle for dark mode */
+
+  /* Adjust shadows for dark mode to be more subtle or different */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+
+  --glass-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+}

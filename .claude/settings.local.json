@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install -D tailwindcss postcss autoprefixer)",
+      "Bash(npm run dev)",
+      "Bash(timeout /t 3)",
+      "Bash(npm uninstall tailwindcss)",
+      "Bash(npm install -D tailwindcss@^3)",
+      "Bash(ping localhost -n 4)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

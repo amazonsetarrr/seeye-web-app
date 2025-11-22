@@ -1,0 +1,71 @@
+@import './variables.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--color-bg-app);
+  /* Subtle gradient using Navy and Teal opacity */
+  background-image:
+    radial-gradient(at 0% 0%, rgba(10, 46, 80, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(26, 188, 201, 0.03) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}

@@ -1,0 +1,5 @@
+id,name,email,role
+1,Aliyah,alice@example.com,Admin
+2,Bob,bob@example.com,User
+3,Charlie,charlie@example.com,User
+4,David,david@example.com,Guest
