@@ -3,6 +3,7 @@ import { ThemeProvider } from './components/ThemeContext';
 import { UploadArea } from './features/file-management/UploadArea';
 import { FilePreview } from './features/file-management/FilePreview';
 import { MappingBoard } from './features/mapping/MappingBoard';
+import { NormalizationBoard } from './features/normalization/NormalizationBoard';
 import { ResultsGrid } from './features/results/ResultsGrid';
 import { Home } from './features/dashboard/Home';
 import { Settings } from './features/settings/Settings';
@@ -12,6 +13,7 @@ import { reconcileData } from './features/matching/engine';
 import type { UploadedFile } from './features/file-management/types';
 import type { FieldMapping } from './features/mapping/types';
 import type { ReconciliationResult } from './features/matching/types';
+import type { NormalizedDataset } from './features/normalization/types';
 import { exportToExcel } from './utils/exportHandler';
 import { JobStore } from './utils/store';
 import { ArrowRight, Play, Download } from 'lucide-react';
@@ -20,6 +22,7 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
+  const [normalizedData, setNormalizedData] = useState<NormalizedDataset | null>(null);
   const [results, setResults] = useState<ReconciliationResult | null>(null);
   const [strategy, setStrategy] = useState<'exact' | 'fuzzy'>('fuzzy');
 
@@ -65,6 +68,7 @@ function App() {
   const stepsStatus = {
     datasource: files.length >= 2,
     mapping: mappings.some(m => m.isKey),
+    normalization: !!normalizedData,
     reconciliation: !!results,
   };
 
@@ -154,15 +158,42 @@ function App() {
                   </div>
                 </div>
 
-                <button
-                  onClick={runReconciliation}
-                  className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[var(--color-success)] rounded-lg hover:opacity-90 transition-all shadow-lg shadow-green-500/20 hover:shadow-green-500/40 active:scale-95"
-                >
-                  Run Reconciliation
-                  <Play className="w-4 h-4 ml-2" />
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCurrentView('normalization')}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[var(--color-primary)] rounded-lg hover:bg-[var(--color-primary-hover)] transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 active:scale-95"
+                  >
+                    Next: Normalize Data
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                  <button
+                    onClick={runReconciliation}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[var(--color-success)] rounded-lg hover:opacity-90 transition-all shadow-lg shadow-green-500/20 hover:shadow-green-500/40 active:scale-95"
+                  >
+                    Skip & Run Reconciliation
+                    <Play className="w-4 h-4 ml-2" />
+                  </button>
+                </div>
               </div>
             )}
+          </div>
+        );
+
+      case 'normalization':
+        return (
+          <div className="space-y-8">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-[var(--color-text-main)]">Normalization</h2>
+              <p className="text-[var(--color-text-secondary)]">
+                Combine data from both sources into a single normalized table with unified column names.
+              </p>
+            </div>
+            <NormalizationBoard
+              sourceFile={files[0]}
+              targetFile={files[1]}
+              mappings={mappings}
+              onNormalizationComplete={setNormalizedData}
+            />
           </div>
         );
 

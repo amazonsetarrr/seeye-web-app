@@ -3,7 +3,7 @@ import type { UploadedFile } from '../file-management/types';
 import type { FieldMapping } from '../mapping/types';
 import type { NormalizedDataset } from './types';
 import { NormalizationEngine } from '../../logic/normalization/NormalizationEngine';
-import { Database, Download, ArrowRightLeft, Edit2, Check } from 'lucide-react';
+import { Database, ArrowRightLeft, Edit2, Check } from 'lucide-react';
 import { NormalizedDataTable } from './NormalizedDataTable';
 
 interface NormalizationBoardProps {

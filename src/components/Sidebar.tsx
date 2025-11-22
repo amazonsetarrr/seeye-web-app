@@ -1,8 +1,8 @@
-import { Home, Database, GitGraph, CheckSquare, FileText, Settings, LogOut } from 'lucide-react';
+import { Home, Database, GitGraph, Workflow, CheckSquare, FileText, Settings, LogOut } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { ThemeToggle } from './ThemeToggle';
 
-export type View = 'home' | 'datasource' | 'mapping' | 'reconciliation' | 'report' | 'settings';
+export type View = 'home' | 'datasource' | 'mapping' | 'normalization' | 'reconciliation' | 'report' | 'settings';
 
 interface SidebarProps {
     currentView: View;
@@ -10,6 +10,7 @@ interface SidebarProps {
     stepsStatus: {
         datasource: boolean; // true if files uploaded
         mapping: boolean;    // true if mapping done
+        normalization: boolean; // true if normalization done
         reconciliation: boolean; // true if results ready
     };
 }
@@ -19,7 +20,8 @@ export function Sidebar({ currentView, onNavigate, stepsStatus }: SidebarProps) 
         { id: 'home', label: 'Home', icon: Home, disabled: false },
         { id: 'datasource', label: 'Data Source', icon: Database, disabled: false },
         { id: 'mapping', label: 'Mapping', icon: GitGraph, disabled: !stepsStatus.datasource },
-        { id: 'reconciliation', label: 'Reconciliation', icon: CheckSquare, disabled: !stepsStatus.mapping },
+        { id: 'normalization', label: 'Normalization', icon: Workflow, disabled: !stepsStatus.mapping },
+        { id: 'reconciliation', label: 'Reconciliation', icon: CheckSquare, disabled: !stepsStatus.normalization },
         { id: 'report', label: 'Report', icon: FileText, disabled: !stepsStatus.reconciliation },
         { id: 'settings', label: 'Settings', icon: Settings, disabled: false },
     ] as const;
