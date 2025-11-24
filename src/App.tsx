@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ThemeProvider } from './components/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
@@ -9,28 +8,39 @@ import { MappingView } from './views/MappingView';
 import { NormalizationView } from './views/NormalizationView';
 import { ReconciliationView } from './views/ReconciliationView';
 import { ReportView } from './views/ReportView';
-import { useReconciliation } from './hooks/useReconciliation';
-import type { View } from './components/Sidebar';
+import { useAppStore } from './store/appStore';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
+  // Get state and actions from Zustand store
+  const currentView = useAppStore((state) => state.currentView);
+  const files = useAppStore((state) => state.files);
+  const mappings = useAppStore((state) => state.mappings);
+  const results = useAppStore((state) => state.results);
+  const strategy = useAppStore((state) => state.strategy);
 
-  const {
-    files,
-    mappings,
-    results,
-    strategy,
-    handleFilesUploaded,
-    handleRemoveFile,
-    handleSwapFiles,
-    setMappings,
-    setNormalizedData,
-    setStrategy,
-    runReconciliation,
-    getStepsStatus,
-  } = useReconciliation();
+  const setCurrentView = useAppStore((state) => state.setCurrentView);
+  const addFiles = useAppStore((state) => state.addFiles);
+  const removeFile = useAppStore((state) => state.removeFile);
+  const swapFiles = useAppStore((state) => state.swapFiles);
+  const setMappings = useAppStore((state) => state.setMappings);
+  const setNormalizedData = useAppStore((state) => state.setNormalizedData);
+  const setStrategy = useAppStore((state) => state.setStrategy);
+  const runReconciliation = useAppStore((state) => state.runReconciliation);
+  const getStepsStatus = useAppStore((state) => state.getStepsStatus);
 
   const stepsStatus = getStepsStatus();
+
+  const handleFilesUploaded = (newFiles: any[]) => {
+    addFiles(newFiles);
+  };
+
+  const handleRemoveFile = (id: string) => {
+    removeFile(id);
+  };
+
+  const handleSwapFiles = () => {
+    swapFiles();
+  };
 
   const handleRunReconciliation = () => {
     runReconciliation();
