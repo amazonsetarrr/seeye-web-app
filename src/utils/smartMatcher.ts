@@ -11,6 +11,7 @@ import {
     partialRatio,
 } from './fuzzyMatch';
 import { smartNormalize, generateVariations } from './dataNormalizer';
+import { memoize } from './memoizationCache';
 
 export type MatchAlgorithm =
     | 'levenshtein'
@@ -30,8 +31,9 @@ export interface MatchResult {
 
 /**
  * Multi-algorithm matcher - tries multiple algorithms and returns the best result
+ * (Internal implementation without memoization)
  */
-export const multiAlgorithmMatch = (str1: string, str2: string): MatchResult => {
+const multiAlgorithmMatchInternal = (str1: string, str2: string): MatchResult => {
     const original1 = str1;
     const original2 = str2;
 
@@ -84,9 +86,19 @@ export const multiAlgorithmMatch = (str1: string, str2: string): MatchResult => 
 };
 
 /**
- * Variation-based matching - tries multiple normalized versions
+ * Multi-algorithm matcher with memoization
  */
-export const variationMatch = (str1: string, str2: string, _threshold: number = 0.8): MatchResult => {
+export const multiAlgorithmMatch = memoize(multiAlgorithmMatchInternal, {
+    maxSize: 5000,
+    ttl: 10 * 60 * 1000, // 10 minutes
+    keyGenerator: (str1, str2) => `${str1}|${str2}`,
+});
+
+/**
+ * Variation-based matching - tries multiple normalized versions
+ * (Internal implementation without memoization)
+ */
+const variationMatchInternal = (str1: string, str2: string, _threshold: number = 0.8): MatchResult => {
     const variations1 = generateVariations(str1);
     const variations2 = generateVariations(str2);
 
@@ -95,7 +107,7 @@ export const variationMatch = (str1: string, str2: string, _threshold: number = 
     // Try all combinations of variations
     for (const v1 of variations1) {
         for (const v2 of variations2) {
-            const match = multiAlgorithmMatch(v1, v2);
+            const match = multiAlgorithmMatchInternal(v1, v2);
 
             if (!bestMatch || match.score > bestMatch.score) {
                 bestMatch = {
@@ -123,9 +135,19 @@ export const variationMatch = (str1: string, str2: string, _threshold: number = 
 };
 
 /**
- * Smart compare - the main entry point for intelligent matching
+ * Variation-based matching with memoization
  */
-export const smartCompare = (
+export const variationMatch = memoize(variationMatchInternal, {
+    maxSize: 3000,
+    ttl: 10 * 60 * 1000,
+    keyGenerator: (str1, str2, threshold) => `${str1}|${str2}|${threshold}`,
+});
+
+/**
+ * Smart compare - the main entry point for intelligent matching
+ * (Internal implementation without memoization)
+ */
+const smartCompareInternal = (
     str1: string,
     str2: string,
     options: {
@@ -173,17 +195,27 @@ export const smartCompare = (
 
     // Use variation matching for best results
     if (useVariations) {
-        return variationMatch(str1, str2, threshold);
+        return variationMatchInternal(str1, str2, threshold);
     }
 
     // Use multi-algorithm matching
-    return multiAlgorithmMatch(str1, str2);
+    return multiAlgorithmMatchInternal(str1, str2);
 };
 
 /**
- * Compare composite keys using smart matching
+ * Smart compare with memoization
  */
-export const smartCompareCompositeKeys = (
+export const smartCompare = memoize(smartCompareInternal, {
+    maxSize: 5000,
+    ttl: 10 * 60 * 1000,
+    keyGenerator: (str1, str2, options) => `${str1}|${str2}|${JSON.stringify(options)}`,
+});
+
+/**
+ * Compare composite keys using smart matching
+ * (Internal implementation without memoization)
+ */
+const smartCompareCompositeKeysInternal = (
     keys1: string[],
     keys2: string[],
     threshold: number = 0.8
@@ -196,7 +228,7 @@ export const smartCompareCompositeKeys = (
     let totalScore = 0;
 
     for (let i = 0; i < keys1.length; i++) {
-        const result = smartCompare(keys1[i], keys2[i], { threshold });
+        const result = smartCompareInternal(keys1[i], keys2[i], { threshold });
         details.push(result);
         totalScore += result.score;
     }
@@ -209,3 +241,12 @@ export const smartCompareCompositeKeys = (
         details,
     };
 };
+
+/**
+ * Compare composite keys with memoization
+ */
+export const smartCompareCompositeKeys = memoize(smartCompareCompositeKeysInternal, {
+    maxSize: 5000,
+    ttl: 10 * 60 * 1000,
+    keyGenerator: (keys1, keys2, threshold) => `${keys1.join('|')}||${keys2.join('|')}||${threshold}`,
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { ReconciliationResult } from '../matching/types';
 import type { FieldMapping } from '../mapping/types';
 import { Check, AlertTriangle, X, Search, Info, ChevronDown } from 'lucide-react';
@@ -9,41 +9,45 @@ interface ResultsGridProps {
     mappings: FieldMapping[];
 }
 
-export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) => {
+export const ResultsGrid: React.FC<ResultsGridProps> = React.memo(({ results, mappings }) => {
     const [filter, setFilter] = useState<'all' | 'matched' | 'conflict' | 'orphan'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-    const filteredResults = results.results.filter((r) => {
-        if (filter !== 'all' && r.status !== filter) return false;
-        if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
-            const sourceStr = r.sourceRecord ? JSON.stringify(r.sourceRecord).toLowerCase() : '';
-            const targetStr = r.targetRecord ? JSON.stringify(r.targetRecord).toLowerCase() : '';
-            return sourceStr.includes(searchLower) || targetStr.includes(searchLower);
-        }
-        return true;
-    });
+    // Memoize filtered results to avoid re-computing on every render
+    const filteredResults = useMemo(() => {
+        return results.results.filter((r) => {
+            if (filter !== 'all' && r.status !== filter) return false;
+            if (searchTerm) {
+                const searchLower = searchTerm.toLowerCase();
+                const sourceStr = r.sourceRecord ? JSON.stringify(r.sourceRecord).toLowerCase() : '';
+                const targetStr = r.targetRecord ? JSON.stringify(r.targetRecord).toLowerCase() : '';
+                return sourceStr.includes(searchLower) || targetStr.includes(searchLower);
+            }
+            return true;
+        });
+    }, [results.results, filter, searchTerm]);
 
-    const getStatusColor = (status: string) => {
+    // Memoize static helper functions
+    const getStatusColor = useCallback((status: string) => {
         switch (status) {
             case 'matched': return 'bg-[var(--color-success-bg)] text-[var(--color-success)] border-[var(--color-success)]';
             case 'conflict': return 'bg-[var(--color-warning-bg)] text-[var(--color-warning)] border-[var(--color-warning)]';
             case 'orphan': return 'bg-[var(--color-error-bg)] text-[var(--color-error)] border-[var(--color-error)]';
             default: return 'bg-[var(--color-bg-surface-hover)] text-[var(--color-text-secondary)] border-[var(--color-border)]';
         }
-    };
+    }, []);
 
-    const getStatusIcon = (status: string) => {
+    const getStatusIcon = useCallback((status: string) => {
         switch (status) {
             case 'matched': return <Check className="w-3 h-3" />;
             case 'conflict': return <AlertTriangle className="w-3 h-3" />;
             case 'orphan': return <X className="w-3 h-3" />;
             default: return null;
         }
-    };
+    }, []);
 
-    const getAlgorithmBadge = (algorithm: string) => {
+    const getAlgorithmBadge = useCallback((algorithm: string) => {
         const colors: Record<string, string> = {
             'levenshtein': 'bg-blue-100 text-blue-700 border-blue-200',
             'jaro-winkler': 'bg-purple-100 text-purple-700 border-purple-200',
@@ -65,9 +69,9 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                 {labels[algorithm] || algorithm}
             </span>
         );
-    };
+    }, []);
 
-    const getMatchKey = (result: any) => {
+    const getMatchKey = useCallback((result: any) => {
         const keyMappings = mappings.filter(m => m.isKey);
         if (keyMappings.length === 0) return '-';
 
@@ -81,9 +85,9 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
             const value = record[field];
             return `${m.sourceField}: ${value}`;
         }).join(', ');
-    };
+    }, [mappings]);
 
-    const renderRecord = (record: any, isSource: boolean) => {
+    const renderRecord = useCallback((record: any, isSource: boolean) => {
         if (!record) return '-';
 
         return (
@@ -104,9 +108,9 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                 })}
             </div>
         );
-    };
+    }, [mappings]);
 
-    const toggleRowExpansion = (rowId: string) => {
+    const toggleRowExpansion = useCallback((rowId: string) => {
         setExpandedRows(prev => {
             const newSet = new Set(prev);
             if (newSet.has(rowId)) {
@@ -116,9 +120,9 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
             }
             return newSet;
         });
-    };
+    }, []);
 
-    const renderExpandedRow = (result: any) => {
+    const renderExpandedRow = useCallback((result: any) => {
         const sourceRecord = result.sourceRecord;
         const targetRecord = result.targetRecord;
 
@@ -259,7 +263,10 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                 </td>
             </motion.tr>
         );
-    };
+    }, [mappings, getAlgorithmBadge]);
+
+    // Memoize the displayed results to avoid recalculating slice on every render
+    const displayedResults = useMemo(() => filteredResults.slice(0, 100), [filteredResults]);
 
     return (
         <div className="space-y-6">
@@ -304,7 +311,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]">
-                            {filteredResults.slice(0, 100).map((result) => {
+                            {displayedResults.map((result) => {
                                 const isExpanded = expandedRows.has(result.id);
                                 return (
                                     <React.Fragment key={result.id}>
@@ -408,4 +415,6 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
             </div>
         </div>
     );
-};
+});
+
+ResultsGrid.displayName = 'ResultsGrid';
