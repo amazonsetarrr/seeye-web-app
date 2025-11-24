@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { NormalizedDataset } from './types';
 import { Download, ChevronUp, ChevronDown, Search } from 'lucide-react';
-import { exportToExcel } from '../../utils/exportHandler';
+import { exportNormalizedDataToExcel } from '../../utils/exportHandler';
 import { NormalizationEngine } from '../../logic/normalization/NormalizationEngine';
 
 interface NormalizedDataTableProps {
@@ -24,11 +24,11 @@ export const NormalizedDataTable: React.FC<NormalizedDataTableProps> = ({ datase
         }
     };
 
-    const handleExport = async () => {
+    const handleExport = () => {
         const exportData = NormalizationEngine.exportToArray(dataset);
         const headers = NormalizationEngine.getColumnHeaders(dataset);
 
-        await exportToExcel(
+        exportNormalizedDataToExcel(
             exportData,
             headers,
             `normalized_data_${new Date().toISOString().split('T')[0]}.xlsx`
@@ -134,7 +134,7 @@ export const NormalizedDataTable: React.FC<NormalizedDataTableProps> = ({ datase
                         </tr>
                     </thead>
                     <tbody className="bg-[var(--color-bg-app)] divide-y divide-[var(--color-border)]">
-                        {paginatedRecords.map((record, idx) => (
+                        {paginatedRecords.map((record) => (
                             <tr key={record.id} className="hover:bg-[var(--color-bg-surface)] transition-colors">
                                 <td className="px-4 py-3 whitespace-nowrap">
                                     <span

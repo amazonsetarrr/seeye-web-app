@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ThemeProvider } from './components/ThemeContext';
 import { UploadArea } from './features/file-management/UploadArea';
 import { FilePreview } from './features/file-management/FilePreview';
@@ -8,41 +7,41 @@ import { ResultsGrid } from './features/results/ResultsGrid';
 import { Home } from './features/dashboard/Home';
 import { Settings } from './features/settings/Settings';
 import { Layout } from './components/Layout';
-import type { View } from './components/Sidebar';
 import { reconcileData } from './features/matching/engine';
-import type { UploadedFile } from './features/file-management/types';
-import type { FieldMapping } from './features/mapping/types';
-import type { ReconciliationResult } from './features/matching/types';
-import type { NormalizedDataset } from './features/normalization/types';
 import { exportToExcel } from './utils/exportHandler';
 import { JobStore } from './utils/store';
 import { ArrowRight, Play, Download } from 'lucide-react';
+import { useAppStore } from './store/appStore';
+import type { UploadedFile } from './features/file-management/types';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [mappings, setMappings] = useState<FieldMapping[]>([]);
-  const [normalizedData, setNormalizedData] = useState<NormalizedDataset | null>(null);
-  const [results, setResults] = useState<ReconciliationResult | null>(null);
-  const [strategy, setStrategy] = useState<'exact' | 'fuzzy'>('fuzzy');
+  // Get state and actions from Zustand store
+  const currentView = useAppStore((state) => state.currentView);
+  const files = useAppStore((state) => state.files);
+  const mappings = useAppStore((state) => state.mappings);
+  const results = useAppStore((state) => state.results);
+  const strategy = useAppStore((state) => state.strategy);
+
+  const setCurrentView = useAppStore((state) => state.setCurrentView);
+  const addFiles = useAppStore((state) => state.addFiles);
+  const removeFile = useAppStore((state) => state.removeFile);
+  const swapFiles = useAppStore((state) => state.swapFiles);
+  const setMappings = useAppStore((state) => state.setMappings);
+  const setNormalizedData = useAppStore((state) => state.setNormalizedData);
+  const setResults = useAppStore((state) => state.setResults);
+  const setStrategy = useAppStore((state) => state.setStrategy);
+  const getStepsStatus = useAppStore((state) => state.getStepsStatus);
 
   const handleFilesUploaded = (newFiles: UploadedFile[]) => {
-    setFiles((prev) => [...prev, ...newFiles]);
+    addFiles(newFiles);
   };
 
   const handleRemoveFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+    removeFile(id);
   };
 
   const handleSwapFiles = () => {
-    if (files.length < 2) return;
-    setFiles((prev) => {
-      const newFiles = [...prev];
-      const temp = newFiles[0];
-      newFiles[0] = newFiles[1];
-      newFiles[1] = temp;
-      return newFiles;
-    });
+    swapFiles();
   };
 
   const runReconciliation = () => {
@@ -65,12 +64,7 @@ function App() {
     });
   };
 
-  const stepsStatus = {
-    datasource: files.length >= 2,
-    mapping: mappings.some(m => m.isKey),
-    normalization: !!normalizedData,
-    reconciliation: !!results,
-  };
+  const stepsStatus = getStepsStatus();
 
   const renderContent = () => {
     switch (currentView) {

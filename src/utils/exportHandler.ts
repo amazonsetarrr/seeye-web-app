@@ -1,6 +1,17 @@
 import * as XLSX from 'xlsx';
 import type { ReconciliationResult } from '../features/matching/types';
 
+export const exportNormalizedDataToExcel = (
+    data: any[],
+    headers: string[],
+    filename: string = 'normalized-data'
+) => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data, { header: headers });
+    XLSX.utils.book_append_sheet(wb, ws, 'Normalized Data');
+    XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+};
+
 export const exportToExcel = (results: ReconciliationResult, filename: string = 'reconciliation-report') => {
     const wb = XLSX.utils.book_new();
 
