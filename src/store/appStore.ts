@@ -4,6 +4,8 @@ import type { UploadedFile } from '../features/file-management/types';
 import type { FieldMapping } from '../features/mapping/types';
 import type { ReconciliationResult } from '../features/matching/types';
 import type { NormalizedDataset } from '../features/normalization/types';
+import { reconcileData } from '../features/matching/engine';
+import { JobStore } from '../utils/store';
 
 interface AppState {
   // State
@@ -23,6 +25,7 @@ interface AppState {
   setNormalizedData: (data: NormalizedDataset | null) => void;
   setResults: (results: ReconciliationResult | null) => void;
   setStrategy: (strategy: 'exact' | 'fuzzy') => void;
+  runReconciliation: () => ReconciliationResult | null;
 
   // Computed values
   getStepsStatus: () => {
@@ -67,6 +70,28 @@ export const useAppStore = create<AppState>((set, get) => ({
   setResults: (results) => set({ results }),
 
   setStrategy: (strategy) => set({ strategy }),
+
+  runReconciliation: () => {
+    const state = get();
+    if (state.files.length < 2) return null;
+
+    const result = reconcileData(state.files[0], state.files[1], {
+      mappings: state.mappings,
+      fuzzyThreshold: 0.8,
+      strategy: state.strategy,
+    });
+
+    set({ results: result });
+
+    // Save job to history
+    JobStore.addJob({
+      name: `${state.files[0].name} vs ${state.files[1].name}`,
+      status: result.summary.conflicts > 0 ? 'Review Needed' : 'Completed',
+      items: result.summary.total,
+    });
+
+    return result;
+  },
 
   getStepsStatus: () => {
     const state = get();

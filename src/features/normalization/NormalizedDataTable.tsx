@@ -31,7 +31,7 @@ export const NormalizedDataTable: React.FC<NormalizedDataTableProps> = ({ datase
         exportNormalizedDataToExcel(
             exportData,
             headers,
-            `normalized_data_${new Date().toISOString().split('T')[0]}.xlsx`
+            `normalized_data_${new Date().toISOString().split('T')[0]}`
         );
     };
 
