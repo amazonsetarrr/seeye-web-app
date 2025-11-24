@@ -122,6 +122,25 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
         const sourceRecord = result.sourceRecord;
         const targetRecord = result.targetRecord;
 
+        // Helper to sort mappings: matches first, then mismatches
+        const sortedMappings = [...mappings].sort((a, b) => {
+            const getStatus = (m: FieldMapping, record1: any, record2: any) => {
+                const val1 = record1?.[m.sourceField];
+                const val2 = record2?.[m.targetField];
+                // If both records exist, check for equality. If one is missing, it's a mismatch.
+                if (record1 && record2) {
+                    return val1 === val2 ? 0 : 1; // 0 for match, 1 for mismatch
+                }
+                return 1; // Mismatch if one record is missing
+            };
+
+            const statusA = getStatus(a, sourceRecord, targetRecord);
+            const statusB = getStatus(b, sourceRecord, targetRecord);
+
+            if (statusA !== statusB) return statusA - statusB;
+            return 0;
+        });
+
         return (
             <motion.tr
                 initial={{ opacity: 0, height: 0 }}
@@ -129,7 +148,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
             >
-                <td colSpan={6} className="px-6 py-4 bg-[var(--color-bg-surface)]">
+                <td colSpan={5} className="px-6 py-4 bg-[var(--color-bg-surface)]">
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h4 className="text-sm font-semibold text-[var(--color-text-main)]">Detailed Comparison</h4>
@@ -151,7 +170,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                                 </div>
                                 {sourceRecord ? (
                                     <div className="space-y-1.5">
-                                        {mappings.map(m => {
+                                        {sortedMappings.map(m => {
                                             const sourceValue = sourceRecord[m.sourceField];
                                             const targetValue = targetRecord?.[m.targetField];
                                             const isDifferent = sourceValue !== targetValue && targetRecord;
@@ -197,7 +216,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                                 </div>
                                 {targetRecord ? (
                                     <div className="space-y-1.5">
-                                        {mappings.map(m => {
+                                        {sortedMappings.map(m => {
                                             const targetValue = targetRecord[m.targetField];
                                             const sourceValue = sourceRecord?.[m.sourceField];
                                             const isDifferent = sourceValue !== targetValue && sourceRecord;
@@ -300,7 +319,6 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                                 <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Confidence</th>
                                 <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Source Record</th>
                                 <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Target Record</th>
-                                <th className="px-6 py-4 font-semibold uppercase tracking-wider text-xs">Differences</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--color-border)]">
@@ -376,19 +394,6 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({ results, mappings }) =
                                             </td>
                                             <td className="px-6 py-4 max-w-xs text-[var(--color-text-main)]">
                                                 {renderRecord(result.targetRecord, false)}
-                                            </td>
-                                            <td className="px-6 py-4 text-[var(--color-text-secondary)]">
-                                                {Object.keys(result.differences).length > 0 ? (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {Object.keys(result.differences).map((key) => (
-                                                            <span key={key} className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded border border-red-100 font-medium">
-                                                                {key}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    '-'
-                                                )}
                                             </td>
                                         </motion.tr>
                                         <AnimatePresence>

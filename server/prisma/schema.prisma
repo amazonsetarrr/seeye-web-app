@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User authentication and profiles
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String   // Hashed password
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedProjects      Project[]             @relation("ProjectOwner")
+  createdJobs        ReconciliationJob[]   @relation("JobCreator")
+  uploadedFiles      File[]                @relation("FileUploader")
+  createdMappings    FieldMapping[]        @relation("MappingCreator")
+  createdRules       NormalizationRule[]   @relation("RuleCreator")
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// Reconciliation projects/containers
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner              User                  @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  jobs               ReconciliationJob[]
+  fieldMappings      FieldMapping[]        @relation("ProjectMappings")
+  normalizationRules NormalizationRule[]
+
+  @@index([ownerId])
+  @@map("projects")
+}
+
+// Individual reconciliation runs
+model ReconciliationJob {
+  id              String        @id @default(uuid())
+  projectId       String
+  name            String
+  description     String?
+  status          JobStatus     @default(PENDING)
+  sourceFileId    String?
+  targetFileId    String?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  completedAt     DateTime?
+  matchStrategy   MatchStrategy @default(FUZZY)
+  fuzzyThreshold  Float         @default(0.8)
+  summaryStats    Json?         // {total, matched, conflicts, orphans: {source, target}}
+
+  // Relations
+  project      Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceFile   File?                   @relation("SourceFile", fields: [sourceFileId], references: [id], onDelete: SetNull)
+  targetFile   File?                   @relation("TargetFile", fields: [targetFileId], references: [id], onDelete: SetNull)
+  creator      User                    @relation("JobCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  files        File[]                  @relation("JobFiles")
+  results      ReconciliationResult[]
+  fieldMapping FieldMapping?           @relation("JobMapping")
+
+  @@index([projectId])
+  @@index([createdBy])
+  @@index([status])
+  @@map("reconciliation_jobs")
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum MatchStrategy {
+  EXACT
+  FUZZY
+}
+
+// Uploaded file metadata
+model File {
+  id          String    @id @default(uuid())
+  jobId       String?
+  filename    String
+  fileType    FileType
+  fileSize    Int       // Size in bytes
+  headers     Json      // Array of column headers
+  rowCount    Int
+  uploadedBy  String
+  uploadedAt  DateTime  @default(now())
+  storagePath String    // Path to file on disk or S3 URL
+  checksum    String    // MD5 or SHA256 checksum
+
+  // Relations
+  job              ReconciliationJob?  @relation("JobFiles", fields: [jobId], references: [id], onDelete: SetNull)
+  uploader         User                @relation("FileUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+  sourceForJobs    ReconciliationJob[] @relation("SourceFile")
+  targetForJobs    ReconciliationJob[] @relation("TargetFile")
+
+  @@index([jobId])
+  @@index([uploadedBy])
+  @@map("files")
+}
+
+enum FileType {
+  SOURCE
+  TARGET
+}
+
+// Saved field mapping configurations
+model FieldMapping {
+  id         String   @id @default(uuid())
+  jobId      String?  @unique
+  projectId  String?
+  name       String
+  mappings   Json     // Array of {sourceField, targetField, isKey}
+  isTemplate Boolean  @default(false)
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  job     ReconciliationJob? @relation("JobMapping", fields: [jobId], references: [id], onDelete: Cascade)
+  project Project?           @relation("ProjectMappings", fields: [projectId], references: [id], onDelete: Cascade)
+  creator User               @relation("MappingCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdBy])
+  @@map("field_mappings")
+}
+
+// Detailed reconciliation results
+model ReconciliationResult {
+  id              String     @id @default(uuid())
+  jobId           String
+  resultType      ResultType
+  sourceData      Json?      // Complete source record
+  targetData      Json?      // Complete target record
+  differences     Json?      // Array of {field, sourceValue, targetValue}
+  compositeKey    String     // Generated key from key fields
+  confidenceScore Float?     // For fuzzy matches (0.0 - 1.0)
+
+  // Relations
+  job ReconciliationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([resultType])
+  @@index([compositeKey])
+  @@map("reconciliation_results")
+}
+
+enum ResultType {
+  MATCHED
+  CONFLICT
+  ORPHAN_SOURCE
+  ORPHAN_TARGET
+}
+
+// Reusable normalization configurations
+model NormalizationRule {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  rules     Json     // Array of normalization rule definitions
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User    @relation("RuleCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("normalization_rules")
+}
+
+// Track all operations for audit trail
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String   // CREATE, UPDATE, DELETE, etc.
+  entityType String   // User, Project, Job, etc.
+  entityId   String
+  changes    Json?    // Before/after values
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

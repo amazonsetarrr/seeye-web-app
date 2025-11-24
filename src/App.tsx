@@ -1,5 +1,9 @@
 import { useState } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { ThemeProvider } from './components/ThemeContext';
+import { Login } from './features/auth/Login';
+import { Register } from './features/auth/Register';
 import { UploadArea } from './features/file-management/UploadArea';
 import { FilePreview } from './features/file-management/FilePreview';
 import { MappingBoard } from './features/mapping/MappingBoard';
@@ -18,7 +22,7 @@ import { exportToExcel } from './utils/exportHandler';
 import { JobStore } from './utils/store';
 import { ArrowRight, Play, Download } from 'lucide-react';
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [mappings, setMappings] = useState<FieldMapping[]>([]);
@@ -269,11 +273,45 @@ function App() {
   };
 
   return (
-    <ThemeProvider>
-      <Layout currentView={currentView} onNavigate={setCurrentView} stepsStatus={stepsStatus}>
-        {renderContent()}
-      </Layout>
-    </ThemeProvider>
+    <Layout currentView={currentView} onNavigate={setCurrentView} stepsStatus={stepsStatus}>
+      {renderContent()}
+    </Layout>
+  );
+}
+
+function App() {
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+
+  const AuthFallback = () => {
+    if (authView === 'login') {
+      return (
+        <Login
+          onSwitchToRegister={() => setAuthView('register')}
+          onLoginSuccess={() => {
+            // After login, the ProtectedRoute will automatically show the app
+          }}
+        />
+      );
+    }
+
+    return (
+      <Register
+        onSwitchToLogin={() => setAuthView('login')}
+        onRegisterSuccess={() => {
+          // After register, the ProtectedRoute will automatically show the app
+        }}
+      />
+    );
+  };
+
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <ProtectedRoute fallback={<AuthFallback />}>
+          <AppContent />
+        </ProtectedRoute>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
