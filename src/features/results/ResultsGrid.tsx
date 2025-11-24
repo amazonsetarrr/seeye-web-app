@@ -87,7 +87,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = React.memo(({ results, ma
         }).join(', ');
     }, [mappings]);
 
-    const renderRecord = useCallback((record: any, isSource: boolean) => {
+    const renderRecord = useCallback((record: any, isSource: boolean, compareRecord?: any) => {
         if (!record) return '-';
 
         return (
@@ -99,10 +99,26 @@ export const ResultsGrid: React.FC<ResultsGridProps> = React.memo(({ results, ma
 
                     if (value === undefined || value === null || value === '') return null;
 
+                    // Check if this field differs from the compare record
+                    let isDifferent = false;
+                    if (compareRecord) {
+                        const compareField = isSource ? m.targetField : m.sourceField;
+                        const compareValue = compareRecord[compareField];
+                        isDifferent = value !== compareValue && compareValue !== undefined && compareValue !== null && compareValue !== '';
+                    }
+
                     return (
-                        <div key={m.id} className={`flex ${isKey ? 'font-bold text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
+                        <div key={m.id} className={`flex items-center gap-1 ${isKey ? 'font-bold text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
                             <span className="w-24 flex-shrink-0 truncate opacity-70" title={field}>{field}:</span>
-                            <span className="flex-1 truncate" title={String(value)}>{String(value)}</span>
+                            <span className={`flex-1 truncate ${isDifferent ? 'text-red-600 dark:text-red-400 font-medium' : ''}`} title={String(value)}>
+                                {String(value)}
+                            </span>
+                            {isDifferent && (
+                                <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400 flex-shrink-0" />
+                            )}
+                            {!isDifferent && compareRecord && (
+                                <Check className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            )}
                         </div>
                     );
                 })}
@@ -379,22 +395,46 @@ export const ResultsGrid: React.FC<ResultsGridProps> = React.memo(({ results, ma
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 max-w-xs text-[var(--color-text-main)]">
-                                                {renderRecord(result.sourceRecord, true)}
+                                                {renderRecord(result.sourceRecord, true, result.targetRecord)}
                                             </td>
                                             <td className="px-6 py-4 max-w-xs text-[var(--color-text-main)]">
-                                                {renderRecord(result.targetRecord, false)}
+                                                {renderRecord(result.targetRecord, false, result.sourceRecord)}
                                             </td>
                                             <td className="px-6 py-4 text-[var(--color-text-secondary)]">
                                                 {Object.keys(result.differences).length > 0 ? (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {Object.keys(result.differences).map((key) => (
-                                                            <span key={key} className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded border border-red-100 font-medium">
-                                                                {key}
-                                                            </span>
-                                                        ))}
+                                                    <div className="space-y-1.5 text-xs">
+                                                        {Object.keys(result.differences).map((key) => {
+                                                            const diff = result.differences[key];
+                                                            return (
+                                                                <div key={key} className="flex flex-col gap-1 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-800">
+                                                                    <span className="font-semibold text-red-700 dark:text-red-400">
+                                                                        {key}:
+                                                                    </span>
+                                                                    <div className="flex items-start gap-2 pl-2">
+                                                                        <div className="flex items-center gap-1 flex-1">
+                                                                            <span className="text-blue-600 dark:text-blue-400 font-medium">Source:</span>
+                                                                            <span className="text-[var(--color-text-main)] break-words">
+                                                                                {String(diff.source) || '-'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-start gap-2 pl-2">
+                                                                        <div className="flex items-center gap-1 flex-1">
+                                                                            <span className="text-purple-600 dark:text-purple-400 font-medium">Target:</span>
+                                                                            <span className="text-[var(--color-text-main)] break-words">
+                                                                                {String(diff.target) || '-'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 ) : (
-                                                    '-'
+                                                    <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                                        <Check className="w-3 h-3" />
+                                                        No differences
+                                                    </span>
                                                 )}
                                             </td>
                                         </motion.tr>
