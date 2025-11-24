@@ -4,6 +4,36 @@ import { generateCompositeKeyArray } from '../utils';
 import { smartCompareCompositeKeys } from '../../../utils/smartMatcher';
 
 export class FuzzyMatchStrategy implements ReconciliationStrategy {
+    private targetKeysCache: Map<string, string[][]> = new Map();
+
+    /**
+     * Pre-compute all target keys for better performance
+     * This reduces O(n²) by computing keys once instead of for each source record
+     */
+    private getOrComputeTargetKeys(
+        targetData: any[],
+        keyMappings: any[],
+        cacheKey: string
+    ): string[][] {
+        if (this.targetKeysCache.has(cacheKey)) {
+            return this.targetKeysCache.get(cacheKey)!;
+        }
+
+        const targetKeys = targetData.map(record =>
+            generateCompositeKeyArray(record, keyMappings, 'target')
+        );
+
+        this.targetKeysCache.set(cacheKey, targetKeys);
+        return targetKeys;
+    }
+
+    /**
+     * Clear the cache when needed (e.g., new reconciliation session)
+     */
+    clearCache(): void {
+        this.targetKeysCache.clear();
+    }
+
     match(
         sourceRecord: any,
         targetData: any[],
@@ -19,6 +49,10 @@ export class FuzzyMatchStrategy implements ReconciliationStrategy {
 
         const sourceKey = generateCompositeKeyArray(sourceRecord, keyMappings, 'source');
 
+        // Pre-compute all target keys once
+        const cacheKey = `${keyMappings.map(m => m.id).join('|')}`;
+        const targetKeys = this.getOrComputeTargetKeys(targetData, keyMappings, cacheKey);
+
         let bestMatch: {
             targetIndex: number;
             score: number;
@@ -31,19 +65,32 @@ export class FuzzyMatchStrategy implements ReconciliationStrategy {
         for (let i = 0; i < targetData.length; i++) {
             if (matchedTargetIndices.has(i)) continue;
 
-            const targetRecord = targetData[i];
-            const targetKey = generateCompositeKeyArray(targetRecord, keyMappings, 'target');
+            const targetKey = targetKeys[i];
 
             const comparison = smartCompareCompositeKeys(sourceKey, targetKey, threshold);
 
-            if (comparison.matches && (!bestMatch || comparison.score > bestMatch.score)) {
-                bestMatch = {
-                    targetIndex: i,
-                    score: comparison.score,
-                    algorithm: comparison.details[0]?.algorithm || 'multi-algorithm',
-                    normalizedSource: comparison.details.map(d => d.normalized1),
-                    normalizedTarget: comparison.details.map(d => d.normalized2),
-                };
+            if (comparison.matches) {
+                // Early exit if we found a perfect match
+                if (comparison.score >= 0.99) {
+                    bestMatch = {
+                        targetIndex: i,
+                        score: comparison.score,
+                        algorithm: comparison.details[0]?.algorithm || 'multi-algorithm',
+                        normalizedSource: comparison.details.map(d => d.normalized1),
+                        normalizedTarget: comparison.details.map(d => d.normalized2),
+                    };
+                    break;
+                }
+
+                if (!bestMatch || comparison.score > bestMatch.score) {
+                    bestMatch = {
+                        targetIndex: i,
+                        score: comparison.score,
+                        algorithm: comparison.details[0]?.algorithm || 'multi-algorithm',
+                        normalizedSource: comparison.details.map(d => d.normalized1),
+                        normalizedTarget: comparison.details.map(d => d.normalized2),
+                    };
+                }
             }
         }
 

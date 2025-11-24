@@ -1,63 +1,24 @@
 /**
- * Data Normalization Utilities
- * Handles common data variations, abbreviations, and formats
+ * Unified Normalization Service
+ * Consolidates all normalization logic for consistent data processing
  */
 
-// Street/Address abbreviations
-const STREET_ABBREVIATIONS: Record<string, string[]> = {
-    'street': ['st', 'str', 'street'],
-    'avenue': ['ave', 'av', 'avenue'],
-    'road': ['rd', 'road'],
-    'drive': ['dr', 'drv', 'drive'],
-    'lane': ['ln', 'lane'],
-    'boulevard': ['blvd', 'boulevard', 'boul'],
-    'court': ['ct', 'court'],
-    'place': ['pl', 'place'],
-    'square': ['sq', 'square'],
-    'terrace': ['ter', 'terrace'],
-    'parkway': ['pkwy', 'parkway', 'pky'],
-    'circle': ['cir', 'circle'],
-    'highway': ['hwy', 'highway'],
-};
+import {
+    STREET_ABBREVIATIONS,
+    COMPANY_SUFFIXES,
+    COUNTRY_VARIATIONS,
+    TITLE_ABBREVIATIONS,
+    NORMALIZATION_CONFIG,
+} from '../config/matching.config';
 
-// Company suffixes
-const COMPANY_SUFFIXES: Record<string, string[]> = {
-    'incorporated': ['inc', 'incorporated', 'incorp'],
-    'corporation': ['corp', 'corporation'],
-    'company': ['co', 'company'],
-    'limited': ['ltd', 'limited'],
-    'llc': ['llc', 'limited liability company', 'limited liability co'],
-    'llp': ['llp', 'limited liability partnership'],
-    'plc': ['plc', 'public limited company'],
-    'group': ['grp', 'group'],
-    'international': ['intl', 'international', 'int'],
-};
-
-// Country codes and names
-const COUNTRY_VARIATIONS: Record<string, string[]> = {
-    'usa': ['usa', 'us', 'united states', 'united states of america', 'america'],
-    'uk': ['uk', 'united kingdom', 'great britain', 'gb', 'britain'],
-    'uae': ['uae', 'united arab emirates'],
-    'canada': ['ca', 'can', 'canada'],
-    'australia': ['au', 'aus', 'australia'],
-    'germany': ['de', 'ger', 'germany', 'deutschland'],
-    'france': ['fr', 'fra', 'france'],
-    'japan': ['jp', 'jpn', 'japan'],
-    'china': ['cn', 'chn', 'china', 'prc'],
-    'india': ['in', 'ind', 'india'],
-};
-
-// Common title abbreviations
-const TITLE_ABBREVIATIONS: Record<string, string[]> = {
-    'doctor': ['dr', 'doc', 'doctor'],
-    'mister': ['mr', 'mister'],
-    'mistress': ['mrs', 'mistress'],
-    'miss': ['ms', 'miss'],
-    'professor': ['prof', 'professor'],
-    'reverend': ['rev', 'reverend'],
-    'captain': ['capt', 'captain', 'cpt'],
-    'lieutenant': ['lt', 'lieut', 'lieutenant'],
-    'sergeant': ['sgt', 'sergeant'],
+/**
+ * Basic string normalization (lowercase, trim, remove extra spaces)
+ */
+export const normalizeString = (str: string): string => {
+    return String(str || '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
 };
 
 /**
@@ -111,8 +72,9 @@ export const normalizePhoneNumber = (phone: string): string => {
     // Remove all non-digit characters
     const digits = phone.replace(/\D/g, '');
     // Remove leading country codes (1, 44, etc.) if present
-    if (digits.length > 10 && (digits.startsWith('1') || digits.startsWith('44'))) {
-        return digits.substring(digits.length - 10);
+    if (digits.length > NORMALIZATION_CONFIG.PHONE_STANDARD_LENGTH &&
+        (digits.startsWith('1') || digits.startsWith('44'))) {
+        return digits.substring(digits.length - NORMALIZATION_CONFIG.PHONE_STANDARD_LENGTH);
     }
     return digits;
 };
@@ -149,6 +111,7 @@ export const normalizeNumber = (num: string): string => {
 
 /**
  * Detect data type and apply appropriate normalization
+ * This is the primary normalization function to use for smart matching
  */
 export const smartNormalize = (value: string): string => {
     if (!value) return '';
@@ -158,7 +121,7 @@ export const smartNormalize = (value: string): string => {
     // Check if it's a phone number (contains digits and phone-like formatting)
     if (/[\d\(\)\-\s]{7,}/.test(str) && /\d{3,}/.test(str)) {
         const normalized = normalizePhoneNumber(str);
-        if (normalized.length >= 7) {
+        if (normalized.length >= NORMALIZATION_CONFIG.PHONE_MIN_LENGTH) {
             return normalized;
         }
     }
