@@ -8,6 +8,7 @@ interface LayoutProps {
     stepsStatus: {
         datasource: boolean;
         mapping: boolean;
+        normalization: boolean;
         reconciliation: boolean;
     };
 }
