@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: cmdb-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: reconciler_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - cmdb-network
+
+  backend:
+    build: ./server
+    container_name: cmdb-backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/reconciler_db?schema=public
+      JWT_SECRET: dev-secret-key
+      CORS_ORIGIN: http://localhost:5173
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - cmdb-network
+
+  frontend:
+    build: .
+    container_name: cmdb-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    volumes:
+      - .:/app
+      - /app/node_modules
+      # Exclude server directory from frontend container to keep it clean (optional but good)
+      - /app/server
+    networks:
+      - cmdb-network
+
+volumes:
+  pgdata:
+
+networks:
+  cmdb-network:
+    driver: bridge
